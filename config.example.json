@@ -1,0 +1,14 @@
+{
+  "synology": {
+    "host": "192.168.1.100",
+    "port": 5000,
+    "username": "your-username",
+    "password": "your-password"
+  },
+  "unifi": {
+    "host": "192.168.1.1",
+    "port": 443,
+    "username": "your-username",
+    "password": "your-password"
+  }
+}

@@ -1,0 +1,19 @@
+services:
+  dashboard:
+    build: .
+    container_name: dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config.json:/app/config.json:ro
+    environment:
+      - NODE_ENV=production
+    networks:
+      - dashboard-network
+
+networks:
+  dashboard-network:
+    driver: bridge
