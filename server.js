@@ -105,7 +105,7 @@ app.post('/api/docker/container/:id/:action', async (req, res) => {
 // Synology endpoints
 app.get('/api/synology/info', async (req, res) => {
   try {
-    const { host, port = 5000, username, password } = config.synology || {};
+    const { host, port = 5000, username, password, useHttps = false } = config.synology || {};
     
     if (!host || !username || !password) {
       return res.json({ 
@@ -114,9 +114,12 @@ app.get('/api/synology/info', async (req, res) => {
       });
     }
 
+    const protocol = useHttps ? 'https' : 'http';
+    
     // Login to Synology
+    // Note: Use HTTPS in production to protect credentials
     const loginResponse = await axios.get(
-      `http://${host}:${port}/webapi/auth.cgi`,
+      `${protocol}://${host}:${port}/webapi/auth.cgi`,
       {
         params: {
           api: 'SYNO.API.Auth',
@@ -139,7 +142,7 @@ app.get('/api/synology/info', async (req, res) => {
 
     // Get system info
     const infoResponse = await axios.get(
-      `http://${host}:${port}/webapi/entry.cgi`,
+      `${protocol}://${host}:${port}/webapi/entry.cgi`,
       {
         params: {
           api: 'SYNO.Core.System',
@@ -153,7 +156,7 @@ app.get('/api/synology/info', async (req, res) => {
 
     // Get storage info
     const storageResponse = await axios.get(
-      `http://${host}:${port}/webapi/entry.cgi`,
+      `${protocol}://${host}:${port}/webapi/entry.cgi`,
       {
         params: {
           api: 'SYNO.Core.System.Utilization',
@@ -181,7 +184,7 @@ app.get('/api/synology/info', async (req, res) => {
 // Unifi endpoints
 app.get('/api/unifi/devices', async (req, res) => {
   try {
-    const { host, username, password, port = 443 } = config.unifi || {};
+    const { host, username, password, port = 443, verifySsl = false } = config.unifi || {};
     
     if (!host || !username || !password) {
       return res.json({ 
@@ -191,9 +194,11 @@ app.get('/api/unifi/devices', async (req, res) => {
     }
 
     // Create axios instance with cookie jar
+    // Note: SSL verification is disabled by default for self-signed certificates
+    // Set verifySsl: true in config.json if you have proper certificates
     const api = axios.create({
       baseURL: `https://${host}:${port}`,
-      httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false }),
+      httpsAgent: new (require('https').Agent)({ rejectUnauthorized: verifySsl }),
       timeout: 5000
     });
 

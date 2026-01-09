@@ -81,16 +81,26 @@ Create a `config.json` file in the root directory:
     "host": "192.168.1.100",
     "port": 5000,
     "username": "your-username",
-    "password": "your-password"
+    "password": "your-password",
+    "useHttps": false
   },
   "unifi": {
     "host": "192.168.1.1",
     "port": 443,
     "username": "your-username",
-    "password": "your-password"
+    "password": "your-password",
+    "verifySsl": false
   }
 }
 ```
+
+**Configuration Options:**
+
+- **Synology**
+  - `useHttps`: Set to `true` to use HTTPS (recommended for production). Default: `false`
+  
+- **Unifi**
+  - `verifySsl`: Set to `true` if you have valid SSL certificates. Default: `false` (allows self-signed certificates)
 
 **Note:** Both Synology and Unifi are optional. The dashboard will work with just Docker if you don't configure them.
 
