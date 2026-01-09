@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const Docker = require('dockerode');
 const axios = require('axios');
-const { NodeSSH } = require('node-ssh');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
