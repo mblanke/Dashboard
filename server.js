@@ -5,6 +5,7 @@ const axios = require('axios');
 const { NodeSSH } = require('node-ssh');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -231,8 +232,6 @@ app.get('/api/unifi/devices', async (req, res) => {
 // System info endpoint
 app.get('/api/system/info', async (req, res) => {
   try {
-    const os = require('os');
-    
     res.json({
       success: true,
       data: {
