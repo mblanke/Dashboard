@@ -5,19 +5,31 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const FRONTEND_PORT = 3000;
 
+// Rate limiting to prevent abuse
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/api', limiter); // Apply rate limiting to all API routes
 
 // Serve frontend static files in production
 const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
 if (fs.existsSync(frontendDistPath)) {
   const frontendApp = express();
+  
+  // Apply rate limiting to frontend serving as well
+  frontendApp.use(limiter);
   frontendApp.use(express.static(frontendDistPath));
   frontendApp.get('/*', (req, res) => {
     res.sendFile(path.join(frontendDistPath, 'index.html'));
