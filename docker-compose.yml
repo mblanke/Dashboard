@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: atlas-dashboard
+    restart: unless-stopped
+    # ports:
+    # - "3001:3000"  # Commented out - using Traefik for routing
+    environment:
+      # Node Environment
+      - NODE_ENV=production
+
+      # Docker API
+      - DOCKER_HOST=${DOCKER_HOST}
+
+      # UniFi Controller
+      - UNIFI_HOST=${UNIFI_HOST}
+      - UNIFI_PORT=${UNIFI_PORT}
+      - UNIFI_USERNAME=${UNIFI_USERNAME}
+      - UNIFI_PASSWORD=${UNIFI_PASSWORD}
+
+      # Synology NAS
+      - SYNOLOGY_HOST=${SYNOLOGY_HOST}
+      - SYNOLOGY_PORT=${SYNOLOGY_PORT}
+      - SYNOLOGY_USERNAME=${SYNOLOGY_USERNAME}
+      - SYNOLOGY_PASSWORD=${SYNOLOGY_PASSWORD}
+
+      # Grafana
+      - NEXT_PUBLIC_GRAFANA_HOST=${NEXT_PUBLIC_GRAFANA_HOST}
+      - GRAFANA_API_KEY=${GRAFANA_API_KEY}
+
+      # API Configuration
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+
+    networks:
+      - dashboard-network
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+
+    # Health check
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --quiet --tries=1 --spider http://localhost:3000 || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Traefik labels
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard.guapo613.beer`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.dashboard-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.dashboard-http.rule=Host(`dashboard.guapo613.beer`)"
+      - "traefik.http.routers.dashboard-http.entrypoints=web"
+      - "traefik.http.routers.dashboard-http.middlewares=dashboard-redirect"
+
+networks:
+  dashboard-network:
+    driver: bridge
