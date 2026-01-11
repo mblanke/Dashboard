@@ -1,0 +1,54 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linter
+        run: npm run lint
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Build Docker image
+        run: docker build -t atlas-dashboard:test .
+      
+      - name: Test Docker image
+        run: |
+          docker run --rm -p 3000:3000 \
+            -e DOCKER_HOST="http://mock:2375" \
+            -e UNIFI_HOST="mock" \
+            -e UNIFI_USERNAME="test" \
+            -e UNIFI_PASSWORD="test" \
+            -e SYNOLOGY_HOST="mock" \
+            -e SYNOLOGY_USERNAME="test" \
+            -e SYNOLOGY_PASSWORD="test" \
+            atlas-dashboard:test &
+          
+          sleep 10
+          
+          curl -f http://localhost:3000/ || exit 1
+          
+          kill %1 || true
