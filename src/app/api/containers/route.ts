@@ -47,6 +47,7 @@ export async function GET() {
           state: c.State,
           status: c.Status,
           ports: c.Ports || [],
+          labels: c.Labels || {},
           cpu,
           memory,
           stats: statsText,

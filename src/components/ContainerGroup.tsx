@@ -28,7 +28,8 @@ export default function ContainerGroup({
     }
   };
 
-  const getTraefikUrl = (labels: Record<string, string>) => {
+  const getTraefikUrl = (labels?: Record<string, string> | null) => {
+    if (!labels || typeof labels !== "object") return null;
     for (const key of Object.keys(labels)) {
       if (key.includes("traefik.http.routers") && key.endsWith(".rule")) {
         const match = labels[key].match(/Host\(`([^`]+)`\)/);
@@ -96,7 +97,7 @@ export default function ContainerGroup({
                   <span className="text-gray-300">{container.status}</span>
                 </div>
 
-                {container.ports.length > 0 && (
+                {container.ports && container.ports.length > 0 && (
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-400">Ports</span>
                     <span className="text-gray-300">
