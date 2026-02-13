@@ -7,12 +7,14 @@ interface GrafanaWidgetProps {
   title: string;
   dashboardUid: string;
   panelId: number;
+  height?: number;
 }
 
 export default function GrafanaWidget({
   title,
   dashboardUid,
   panelId,
+  height,
 }: GrafanaWidgetProps) {
   const [loadError, setLoadError] = useState(false);
   const grafanaHost = process.env.NEXT_PUBLIC_GRAFANA_HOST || "https://grafana.guapo613.beer";
@@ -21,7 +23,7 @@ export default function GrafanaWidget({
 
   return (
     <div className="bg-gray-800/40 backdrop-blur-sm rounded-lg border border-gray-700 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-700 bg-gray-800/60 flex items-center justify-between">
+      <div className="px-4 py-2 border-b border-gray-700 bg-gray-800/60 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-white flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-orange-500" />
           {title}
@@ -36,7 +38,7 @@ export default function GrafanaWidget({
           Open
         </a>
       </div>
-      <div className="relative h-48">
+      <div className="relative" style={{ height: height ? `${height}px` : '12rem' }}>
         {loadError ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-500">
             <AlertCircle className="w-8 h-8 mb-2" />

@@ -145,11 +145,11 @@ export default function Home() {
             dashboardUid="docker-containers"
             panelId={8}
           />
-          <GrafanaWidget
-            title="RAG Pipeline"
-            dashboardUid="rag-pipeline"
-            panelId={1}
-          />
+          <div className="grid grid-cols-3 gap-2">
+            <GrafanaWidget title="Files Processed" dashboardUid="rag-pipeline" panelId={1} height={120} />
+            <GrafanaWidget title="Failed Files" dashboardUid="rag-pipeline" panelId={2} height={120} />
+            <GrafanaWidget title="Total Chunks" dashboardUid="rag-pipeline" panelId={3} height={120} />
+          </div>
 
         </div>
 
