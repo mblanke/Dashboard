@@ -132,18 +132,14 @@ export default function Home() {
         </div>
 
         {/* Network, NAS & Server Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <NetworkWidget />
           <SynologyWidget />
-          <GrafanaWidget
-            title="Server Health"
-            dashboardUid="server-health"
-            panelId={5}
-          />
+
         </div>
 
         {/* Grafana Dashboards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <GrafanaWidget
             title="Docker Containers"
             dashboardUid="docker-containers"
@@ -154,11 +150,7 @@ export default function Home() {
             dashboardUid="rag-pipeline"
             panelId={1}
           />
-          <GrafanaWidget
-            title="Web Traffic"
-            dashboardUid="traefik-traffic"
-            panelId={7}
-          />
+
         </div>
 
         {loading ? (
