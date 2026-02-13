@@ -5,7 +5,7 @@ import { Server, Activity } from "lucide-react";
 import ContainerGroup from "@/components/ContainerGroup";
 import SearchBar from "@/components/SearchBar";
 import GrafanaWidget from "@/components/GrafanaWidget";
-import UnifiWidget from "@/components/UnifiWidget";
+import NetworkWidget from "@/components/NetworkWidget";
 import SynologyWidget from "@/components/SynologyWidget";
 import ServerStatsWidget from "@/components/ServerStatsWidget";
 import GPUStatsWidget from "@/components/GPUStatsWidget";
@@ -77,7 +77,7 @@ export default function Home() {
         ["tdarr"].some((app) => c.name.toLowerCase().includes(app))
       ),
       ai: containers.filter((c) =>
-        ["openwebui", "open-webui", "ollama", "stable-diffusion", "mcp"].some(
+        ["openwebui", "open-webui", "ollama", "stable-diffusion", "mcp", "rag", "litellm", "llm-router", "qdrant", "chromadb"].some(
           (app) => c.name.toLowerCase().includes(app)
         )
       ),
@@ -125,36 +125,39 @@ export default function Home() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Server & GPU Stats */}
         <div className="space-y-6 mb-8">
           <ServerStatsWidget />
           <GPUStatsWidget />
         </div>
 
+        {/* Network, NAS & Server Overview */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <UnifiWidget />
+          <NetworkWidget />
           <SynologyWidget />
           <GrafanaWidget
-            title="Server Stats"
-            dashboardId="server-overview"
-            panelId={1}
+            title="Server Health"
+            dashboardUid="server-health"
+            panelId={5}
           />
         </div>
 
+        {/* Grafana Dashboards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <GrafanaWidget
-            title="Docker Stats"
-            dashboardId="docker-monitoring"
-            panelId={2}
+            title="Docker Containers"
+            dashboardUid="docker-containers"
+            panelId={8}
           />
           <GrafanaWidget
-            title="LLM Metrics"
-            dashboardId="llm-monitoring"
-            panelId={3}
+            title="RAG Pipeline"
+            dashboardUid="rag-pipeline"
+            panelId={1}
           />
           <GrafanaWidget
-            title="System Load"
-            dashboardId="system-metrics"
-            panelId={4}
+            title="Web Traffic"
+            dashboardUid="traefik-traffic"
+            panelId={7}
           />
         </div>
 

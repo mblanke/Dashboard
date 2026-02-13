@@ -10,6 +10,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
       - UNIFI_HOST=${UNIFI_HOST}
       - UNIFI_PORT=${UNIFI_PORT}
       - UNIFI_USERNAME=${UNIFI_USERNAME}
