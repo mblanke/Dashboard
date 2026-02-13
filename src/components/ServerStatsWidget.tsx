@@ -1,154 +1,194 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Cpu, HardDrive, Clock, Server } from "lucide-react";
-import { ServerStats } from "@/types";
+import { Cpu, HardDrive, Clock, Server, Thermometer, MemoryStick } from "lucide-react";
 
-function StatBar({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-}) {
-  const color =
-    value < 50
-      ? "from-green-500 to-green-400"
-      : value < 80
-      ? "from-yellow-500 to-yellow-400"
-      : "from-red-500 to-red-400";
+interface ServerData {
+  name: string;
+  role: string;
+  ip: string;
+  cpu: number;
+  cpuTemp: number | null;
+  memoryPercent: number;
+  memoryUsedGB: number;
+  memoryTotalGB: number;
+  diskPercent: number;
+  uptimeSeconds: number;
+  load1: number;
+}
+
+function formatUptime(sec: number): string {
+  if (!sec) return "—";
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  return d > 0 ? `${d}d ${h}h` : `${h}h`;
+}
+
+function GaugeRing({ value, max, color, size = 72 }: { value: number; max: number; color: string; size?: number }) {
+  const pct = Math.min((value / max) * 100, 100);
+  const radius = (size - 8) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (pct / 100) * circumference;
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-gray-400 flex items-center gap-1">
-          {icon}
-          {label}
-        </span>
-        <span className="text-gray-300 font-mono">{value.toFixed(1)}%</span>
-      </div>
-      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full bg-gradient-to-r ${color}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.min(value, 100)}%` }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        />
-      </div>
-    </div>
+    <svg width={size} height={size} className="-rotate-90">
+      <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
+      <circle
+        cx={size/2} cy={size/2} r={radius} fill="none"
+        stroke={color} strokeWidth="6" strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={strokeDashoffset}
+        className="transition-all duration-1000 ease-out"
+      />
+    </svg>
   );
 }
 
-function formatUptime(seconds: number): string {
-  if (seconds <= 0) return "N/A";
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  return `${days}d ${hours}h`;
+function cpuColor(v: number): string {
+  if (v >= 90) return "#ef4444";
+  if (v >= 70) return "#f59e0b";
+  return "#22c55e";
+}
+
+function ramColor(v: number): string {
+  if (v >= 90) return "#ef4444";
+  if (v >= 70) return "#f59e0b";
+  return "#3b82f6";
+}
+
+function tempColor(v: number): string {
+  if (v >= 90) return "#ef4444";
+  if (v >= 75) return "#f59e0b";
+  if (v >= 60) return "#eab308";
+  return "#22c55e";
 }
 
 export default function ServerStatsWidget() {
-  const [servers, setServers] = useState<ServerStats[]>([]);
+  const [servers, setServers] = useState<ServerData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchStats = async () => {
-    try {
-      const res = await fetch("/api/servers");
-      const data = await res.json();
-      if (Array.isArray(data)) setServers(data);
-    } catch (err) {
-      console.error("Failed to fetch server stats:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchStats();
-    const interval = setInterval(fetchStats, 15000);
+    fetchServers();
+    const interval = setInterval(fetchServers, 15000);
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="bg-gray-800/40 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Server className="w-5 h-5 text-blue-400" />
-          <h2 className="text-lg font-semibold text-white">Server Stats</h2>
-        </div>
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-        </div>
+  const fetchServers = async () => {
+    try {
+      const res = await fetch("/api/servers");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setServers(data);
+      }
+      setLoading(false);
+    } catch { setLoading(false); }
+  };
+
+  if (loading) return (
+    <div className="bg-gray-800/40 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
+      <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+        <Server className="w-5 h-5 text-blue-500" /> Server Health
+      </h3>
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="bg-gray-800/40 backdrop-blur-sm rounded-lg border border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-700 bg-gray-800/60">
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-          <Server className="w-5 h-5 text-blue-400" />
-          Server Stats
-          <span className="ml-auto text-sm text-gray-400">
-            {servers.length} nodes
-          </span>
-        </h2>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-        {servers.map((server, idx) => (
-          <motion.div
-            key={server.name}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            className="bg-gray-900/50 rounded-lg border border-gray-700 p-4 hover:border-blue-500/50 transition-all duration-200"
-          >
+    <div className="bg-gray-800/40 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
+      <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-6">
+        <Server className="w-5 h-5 text-blue-500" />
+        Server Health
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {servers.map((srv) => (
+          <div key={srv.name} className="bg-gray-900/50 rounded-xl p-4">
+            {/* Server name */}
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-white font-medium">{server.name}</h3>
-                <p className="text-xs text-gray-400">{server.role}</p>
+                <h4 className="text-sm font-bold text-white">{srv.name}</h4>
+                <p className="text-xs text-gray-500">{srv.role}</p>
               </div>
-              <span className="text-xs text-gray-500 font-mono">
-                {server.ip}
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              <StatBar
-                label="CPU"
-                value={server.cpu}
-                icon={<Cpu className="w-3 h-3" />}
-              />
-              <StatBar
-                label={`RAM (${server.memoryUsedGB}/${server.memoryTotalGB} GB)`}
-                value={server.memoryPercent}
-                icon={<Server className="w-3 h-3" />}
-              />
-              <StatBar
-                label="Disk"
-                value={server.diskPercent}
-                icon={<HardDrive className="w-3 h-3" />}
-              />
-
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-700/50">
-                <span className="text-gray-400 flex items-center gap-1">
+              <div className="text-right text-xs text-gray-500">
+                <div className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  Uptime
-                </span>
-                <span className="text-gray-300 font-mono">
-                  {formatUptime(server.uptimeSeconds)}
+                  {formatUptime(srv.uptimeSeconds)}
+                </div>
+                <div>Load: {srv.load1}</div>
+              </div>
+            </div>
+
+            {/* 3 Gauges */}
+            <div className="flex items-center justify-around mb-3">
+              {/* CPU Gauge */}
+              <div className="relative flex flex-col items-center">
+                <div className="relative">
+                  <GaugeRing value={srv.cpu} max={100} color={cpuColor(srv.cpu)} />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">{Math.round(srv.cpu)}%</span>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-400 mt-1 flex items-center gap-0.5">
+                  <Cpu className="w-3 h-3" /> CPU
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-gray-400">Load (1m)</span>
-                <span className="text-gray-300 font-mono">
-                  {server.load1}
+
+              {/* RAM Gauge */}
+              <div className="relative flex flex-col items-center">
+                <div className="relative">
+                  <GaugeRing value={srv.memoryPercent} max={100} color={ramColor(srv.memoryPercent)} />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">{Math.round(srv.memoryPercent)}%</span>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-400 mt-1 flex items-center gap-0.5">
+                  <MemoryStick className="w-3 h-3" /> RAM
+                </span>
+              </div>
+
+              {/* Temp Gauge */}
+              <div className="relative flex flex-col items-center">
+                <div className="relative">
+                  <GaugeRing
+                    value={srv.cpuTemp ?? 0}
+                    max={110}
+                    color={srv.cpuTemp !== null ? tempColor(srv.cpuTemp) : "#4b5563"}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">
+                      {srv.cpuTemp !== null ? `${srv.cpuTemp}°` : "—"}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-400 mt-1 flex items-center gap-0.5">
+                  <Thermometer className="w-3 h-3" /> Temp
                 </span>
               </div>
             </div>
-          </motion.div>
+
+            {/* Disk + Memory detail */}
+            <div className="space-y-2">
+              <div>
+                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                  <span className="flex items-center gap-1"><HardDrive className="w-3 h-3" /> Disk</span>
+                  <span>{srv.diskPercent}%</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      srv.diskPercent > 90 ? "bg-red-500" : srv.diskPercent > 75 ? "bg-yellow-500" : "bg-emerald-500"
+                    }`}
+                    style={{ width: `${Math.min(srv.diskPercent, 100)}%` }}
+                  />
+                </div>
+              </div>
+              <div className="text-xs text-gray-500 text-center">
+                {srv.memoryUsedGB} / {srv.memoryTotalGB} GB RAM
+              </div>
+            </div>
+          </div>
         ))}
       </div>
     </div>
