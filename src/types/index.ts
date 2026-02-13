@@ -7,6 +7,9 @@ export interface Container {
   created: number;
   ports: Port[];
   labels: Record<string, string>;
+  cpu?: string;
+  memory?: string;
+  stats?: string;
 }
 
 export interface Port {
@@ -37,4 +40,25 @@ export interface GrafanaDashboard {
   uid: string;
   title: string;
   url: string;
+}
+
+export interface ServerStats {
+  name: string;
+  role: string;
+  ip: string;
+  cpu: number;
+  memoryPercent: number;
+  memoryUsedGB: number;
+  memoryTotalGB: number;
+  diskPercent: number;
+  uptimeSeconds: number;
+  load1: number;
+}
+
+export interface GPUStats {
+  name: string;
+  gpu_util: number;
+  mem_util: number;
+  temp: number;
+  power_watts: number;
 }

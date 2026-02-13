@@ -2,7 +2,7 @@
 
 import { Container } from "@/types";
 import { motion } from "framer-motion";
-import { ExternalLink, Power, Circle } from "lucide-react";
+import { ExternalLink, Circle } from "lucide-react";
 
 interface ContainerGroupProps {
   title: string;
@@ -29,12 +29,25 @@ export default function ContainerGroup({
   };
 
   const getTraefikUrl = (labels: Record<string, string>) => {
-    const host = labels["traefik.http.routers.https.rule"];
-    if (host) {
-      const match = host.match(/Host\(`([^`]+)`\)/);
-      if (match) return `https://${match[1]}`;
+    for (const key of Object.keys(labels)) {
+      if (key.includes("traefik.http.routers") && key.endsWith(".rule")) {
+        const match = labels[key].match(/Host\(`([^`]+)`\)/);
+        if (match) return `https://${match[1]}`;
+      }
     }
     return null;
+  };
+
+  const parseCpuPercent = (cpu?: string): number => {
+    if (!cpu) return 0;
+    const val = parseFloat(cpu.replace("%", ""));
+    return isNaN(val) ? 0 : val;
+  };
+
+  const getCpuBarColor = (val: number): string => {
+    if (val < 25) return "bg-green-500";
+    if (val < 60) return "bg-yellow-500";
+    return "bg-red-500";
   };
 
   return (
@@ -52,6 +65,7 @@ export default function ContainerGroup({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
         {containers.map((container, idx) => {
           const url = getTraefikUrl(container.labels);
+          const cpuVal = parseCpuPercent(container.cpu);
           return (
             <motion.div
               key={container.id}
@@ -91,6 +105,31 @@ export default function ContainerGroup({
                         .map((p) => p.publicPort)
                         .join(", ") || "Internal"}
                     </span>
+                  </div>
+                )}
+
+                {container.state === "running" && container.cpu && (
+                  <div className="pt-2 border-t border-gray-700/50 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400">CPU</span>
+                      <span className="text-gray-300 font-mono text-[11px]">
+                        {container.cpu}
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${getCpuBarColor(cpuVal)}`}
+                        style={{ width: `${Math.min(cpuVal, 100)}%` }}
+                      />
+                    </div>
+                    {container.memory && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-400">Memory</span>
+                        <span className="text-gray-300 font-mono text-[11px]">
+                          {container.memory}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
 

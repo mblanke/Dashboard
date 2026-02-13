@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Server, Activity } from "lucide-react";
+import { Server, Activity } from "lucide-react";
 import ContainerGroup from "@/components/ContainerGroup";
 import SearchBar from "@/components/SearchBar";
 import GrafanaWidget from "@/components/GrafanaWidget";
 import UnifiWidget from "@/components/UnifiWidget";
 import SynologyWidget from "@/components/SynologyWidget";
+import ServerStatsWidget from "@/components/ServerStatsWidget";
+import GPUStatsWidget from "@/components/GPUStatsWidget";
 import { Container } from "@/types";
 
 export default function Home() {
@@ -16,7 +18,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchContainers();
-    const interval = setInterval(fetchContainers, 10000); // Refresh every 10s
+    const interval = setInterval(fetchContainers, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -36,79 +38,39 @@ export default function Home() {
     return {
       media: containers.filter((c) =>
         [
-          "sonarr",
-          "radarr",
-          "lidarr",
-          "whisparr",
-          "prowlarr",
-          "bazarr",
-          "tautulli",
-          "overseerr",
-          "ombi",
-          "jellyfin",
-          "plex",
-          "audiobookshelf",
+          "sonarr", "radarr", "lidarr", "whisparr", "prowlarr", "bazarr",
+          "tautulli", "overseerr", "ombi", "jellyfin", "plex", "audiobookshelf",
           "lazylibrarian",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       download: containers.filter((c) =>
         [
-          "qbittorrent",
-          "transmission",
-          "sabnzbd",
-          "nzbget",
-          "deluge",
-          "gluetun",
-          "flaresolverr",
+          "qbittorrent", "transmission", "sabnzbd", "nzbget", "deluge",
+          "gluetun", "flaresolverr",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       infrastructure: containers.filter((c) =>
         [
-          "traefik",
-          "portainer",
-          "heimdall",
-          "homepage",
-          "nginx",
-          "caddy",
-          "pihole",
-          "adguard",
-          "unbound",
-          "mosquitto",
+          "traefik", "portainer", "heimdall", "homepage", "nginx", "caddy",
+          "pihole", "adguard", "unbound", "mosquitto",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       monitoring: containers.filter((c) =>
         [
-          "grafana",
-          "prometheus",
-          "cadvisor",
-          "node-exporter",
-          "dozzle",
-          "uptime-kuma",
-          "beszel",
-          "dockmon",
-          "docker-stats-exporter",
-          "diun",
+          "grafana", "prometheus", "cadvisor", "node-exporter", "dozzle",
+          "uptime-kuma", "beszel", "dockmon", "docker-stats-exporter", "diun",
           "container-census",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       automation: containers.filter((c) =>
         [
-          "homeassistant",
-          "home-assistant",
-          "n8n",
-          "nodered",
-          "node-red",
+          "homeassistant", "home-assistant", "n8n", "nodered", "node-red",
           "duplicati",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       productivity: containers.filter((c) =>
         [
-          "nextcloud",
-          "openproject",
-          "gitea",
-          "gitlab",
-          "code-server",
-          "vscode",
+          "nextcloud", "openproject", "gitea", "gitlab", "code-server", "vscode",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       media_processing: containers.filter((c) =>
@@ -142,7 +104,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Header */}
       <header className="border-b border-gray-700 bg-gray-900/50 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -164,7 +125,11 @@ export default function Home() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Widgets Section */}
+        <div className="space-y-6 mb-8">
+          <ServerStatsWidget />
+          <GPUStatsWidget />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <UnifiWidget />
           <SynologyWidget />
@@ -175,7 +140,6 @@ export default function Home() {
           />
         </div>
 
-        {/* Grafana Dashboards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <GrafanaWidget
             title="Docker Stats"
@@ -194,82 +158,41 @@ export default function Home() {
           />
         </div>
 
-        {/* Container Groups */}
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
         ) : (
           <div className="space-y-6">
+            {grouped.ai.length > 0 && (
+              <ContainerGroup title="AI Services" containers={grouped.ai} icon="🤖" />
+            )}
             {grouped.media.length > 0 && (
-              <ContainerGroup
-                title="Media Management"
-                containers={grouped.media}
-                icon="📺"
-              />
+              <ContainerGroup title="Media Management" containers={grouped.media} icon="📺" />
             )}
             {grouped.download.length > 0 && (
-              <ContainerGroup
-                title="Download Clients"
-                containers={grouped.download}
-                icon="⬇️"
-              />
-            )}
-            {grouped.ai.length > 0 && (
-              <ContainerGroup
-                title="AI Services"
-                containers={grouped.ai}
-                icon="🤖"
-              />
+              <ContainerGroup title="Download Clients" containers={grouped.download} icon="⬇️" />
             )}
             {grouped.photos.length > 0 && (
-              <ContainerGroup
-                title="Photo Management"
-                containers={grouped.photos}
-                icon="📷"
-              />
+              <ContainerGroup title="Photo Management" containers={grouped.photos} icon="📷" />
             )}
             {grouped.media_processing.length > 0 && (
-              <ContainerGroup
-                title="Media Processing"
-                containers={grouped.media_processing}
-                icon="🎬"
-              />
+              <ContainerGroup title="Media Processing" containers={grouped.media_processing} icon="🎬" />
             )}
             {grouped.automation.length > 0 && (
-              <ContainerGroup
-                title="Automation"
-                containers={grouped.automation}
-                icon="⚡"
-              />
+              <ContainerGroup title="Automation" containers={grouped.automation} icon="⚡" />
             )}
             {grouped.productivity.length > 0 && (
-              <ContainerGroup
-                title="Productivity"
-                containers={grouped.productivity}
-                icon="💼"
-              />
+              <ContainerGroup title="Productivity" containers={grouped.productivity} icon="💼" />
             )}
             {grouped.infrastructure.length > 0 && (
-              <ContainerGroup
-                title="Infrastructure"
-                containers={grouped.infrastructure}
-                icon="🔧"
-              />
+              <ContainerGroup title="Infrastructure" containers={grouped.infrastructure} icon="🔧" />
             )}
             {grouped.monitoring.length > 0 && (
-              <ContainerGroup
-                title="Monitoring"
-                containers={grouped.monitoring}
-                icon="📊"
-              />
+              <ContainerGroup title="Monitoring" containers={grouped.monitoring} icon="📊" />
             )}
             {grouped.databases.length > 0 && (
-              <ContainerGroup
-                title="Databases"
-                containers={grouped.databases}
-                icon="🗄️"
-              />
+              <ContainerGroup title="Databases" containers={grouped.databases} icon="🗄️" />
             )}
           </div>
         )}
