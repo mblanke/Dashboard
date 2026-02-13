@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: atlas-dashboard
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DOCKER_HOST=${DOCKER_HOST}
+      - UNIFI_HOST=${UNIFI_HOST}
+      - UNIFI_PORT=${UNIFI_PORT}
+      - UNIFI_USERNAME=${UNIFI_USERNAME}
+      - UNIFI_PASSWORD=${UNIFI_PASSWORD}
+      - SYNOLOGY_HOST=${SYNOLOGY_HOST}
+      - SYNOLOGY_PORT=${SYNOLOGY_PORT}
+      - SYNOLOGY_USERNAME=${SYNOLOGY_USERNAME}
+      - SYNOLOGY_PASSWORD=${SYNOLOGY_PASSWORD}
+      - NEXT_PUBLIC_GRAFANA_HOST=${NEXT_PUBLIC_GRAFANA_HOST}
+      - GRAFANA_API_KEY=${GRAFANA_API_KEY}
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+    networks:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.atlas-dashboard.rule=Host(\dashboard.guapo613.beer\)"
+      - "traefik.http.routers.atlas-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.atlas-dashboard.tls=true"
+      - "traefik.http.services.atlas-dashboard.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.atlas-dashboard-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.atlas-dashboard-http.rule=Host(\dashboard.guapo613.beer\)"
+      - "traefik.http.routers.atlas-dashboard-http.entrypoints=web"
+      - "traefik.http.routers.atlas-dashboard-http.middlewares=atlas-dashboard-redirect"
+
+networks:
+  traefik:
+    external: true

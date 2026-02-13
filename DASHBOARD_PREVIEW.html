@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas Homeserver Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            background: linear-gradient(
+                180deg,
+                #0b0f14 0%,
+                #0e131a 100%
+            );
+            color: #e5e7eb;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        .card-base {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(14px) saturate(120%);
+            -webkit-backdrop-filter: blur(14px) saturate(120%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                0 8px 24px rgba(0, 0, 0, 0.35);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-base:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.18);
+            transform: translateY(-1px);
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.35rem 0.75rem;
+            border-radius: 0.375rem;
+            letter-spacing: 0.5px;
+        }
+        .status-running { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+        .status-down { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+        .btn-sm {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.75rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary { background: rgba(71, 85, 105, 0.5); color: #cbd5e1; }
+        .btn-secondary:hover { background: rgba(71, 85, 105, 0.7); }
+        .tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+        .metric-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    </style>
+</head>
+<body class="min-h-screen p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-12 text-center">
+            <div class="flex items-center justify-center gap-3 mb-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 rounded-xl flex items-center justify-center font-bold text-2xl shadow-lg">⚡</div>
+                <h1 class="text-5xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">Atlas</h1>
+            </div>
+            <p class="text-sm text-slate-400 mb-4">Homeserver Dashboard</p>
+            <div class="flex gap-2 justify-center">
+                <button class="btn-sm btn-secondary">⚙️ Settings</button>
+                <button class="btn-sm btn-primary">✎ Edit</button>
+            </div>
+        </div>
+
+        <!-- Search & Filters -->
+        <div class="mb-6 flex gap-3">
+            <div class="flex-1">
+                <input type="text" placeholder="Search services..." 
+                    class="w-full px-4 py-2 bg-rgba(71, 85, 105, 0.2) border border-slate-700 rounded-lg text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <select class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-blue-500">
+                <option>All (28)</option>
+                <option>Running (27)</option>
+                <option>Stopped (1)</option>
+            </select>
+        </div>
+
+        <!-- Atlas System Gauges -->
+        <div class="grid grid-cols-3 gap-6 mb-8">
+            <!-- CPU Usage Gauge -->
+            <div class="card-base p-6 rounded-lg flex flex-col items-center justify-center">
+                <div class="relative w-24 h-24 mb-3">
+                    <svg viewBox="0 0 100 100" class="w-full h-full transform -rotate-90">
+                        <defs>
+                            <linearGradient id="cpu-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Background circle -->
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="8"/>
+                        <!-- Progress circle -->
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#cpu-gradient)" stroke-width="8" 
+                            stroke-dasharray="212" stroke-dashoffset="53" stroke-linecap="round"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-xl font-bold text-amber-300">75%</span>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 uppercase tracking-wide">CPU Usage</p>
+            </div>
+
+            <!-- RAM Usage Gauge -->
+            <div class="card-base p-6 rounded-lg flex flex-col items-center justify-center">
+                <div class="relative w-24 h-24 mb-3">
+                    <svg viewBox="0 0 100 100" class="w-full h-full transform -rotate-90">
+                        <defs>
+                            <linearGradient id="ram-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Background circle -->
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="8"/>
+                        <!-- Progress circle -->
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#ram-gradient)" stroke-width="8" 
+                            stroke-dasharray="212" stroke-dashoffset="80" stroke-linecap="round"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-xl font-bold text-amber-300">62%</span>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 uppercase tracking-wide">RAM Usage</p>
+            </div>
+
+            <!-- CPU Temp Gauge -->
+            <div class="card-base p-6 rounded-lg flex flex-col items-center justify-center">
+                <div class="relative w-24 h-24 mb-3">
+                    <svg viewBox="0 0 100 100" class="w-full h-full transform -rotate-90">
+                        <defs>
+                            <linearGradient id="temp-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Background circle -->
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255, 255, 255, 0.1)" stroke-width="8"/>
+                        <!-- Progress circle -->
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#temp-gradient)" stroke-width="8" 
+                            stroke-dasharray="212" stroke-dashoffset="106" stroke-linecap="round"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-xl font-bold text-green-400">48°C</span>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 uppercase tracking-wide">CPU Temp</p>
+            </div>
+        </div>
+
+        <!-- Services Summary -->
+        <div class="grid grid-cols-2 gap-3 mb-8">
+            <div class="card-base p-6 rounded-lg">
+                <p class="text-xs text-slate-400 uppercase tracking-wide mb-2">Total Services</p>
+                <p class="text-4xl font-bold">28</p>
+            </div>
+            <div class="card-base p-6 rounded-lg">
+                <p class="text-xs text-slate-400 uppercase tracking-wide mb-2">Running</p>
+                <p class="text-4xl font-bold text-green-400">27</p>
+            </div>
+        </div>
+
+        <!-- Favorites Section -->
+        <div class="mb-8">
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">⭐ Favorites</p>
+            <div class="tile-grid">
+                <!-- Golf App -->
+                <div class="card-base p-4 rounded-lg cursor-move hover:scale-105" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(34, 197, 94, 0.05));">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="text-2xl">⛳</div>
+                        <span class="status-badge status-running">●</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1">Golf Tracker</h3>
+                    <p class="text-xs text-slate-500">Sports App • 5502</p>
+                </div>
+                <div class="card-base p-4 rounded-lg cursor-move hover:scale-105">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="text-2xl">🔴</div>
+                        <span class="status-badge status-running">●</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1">Sonarr</h3>
+                    <p class="text-xs text-slate-500">5 Shows • 2.3 GB</p>
+                </div>
+                <div class="card-base p-4 rounded-lg cursor-move hover:scale-105">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="text-2xl">🎬</div>
+                        <span class="status-badge status-running">●</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1">Radarr</h3>
+                    <p class="text-xs text-slate-500">124 Movies • 1.8 TB</p>
+                </div>
+                <div class="card-base p-4 rounded-lg cursor-move hover:scale-105">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="text-2xl">📺</div>
+                        <span class="status-badge status-running">●</span>
+                    </div>
+                    <h3 class="font-semibold text-sm mb-1">Plex</h3>
+                    <p class="text-xs text-slate-500">2.3 TB • 12 Users</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Grid -->
+        <div>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">🐳 All Services</p>
+            <div class="tile-grid">
+                <!-- Service Tile 1 -->
+                <div class="card-base p-5 rounded-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="font-semibold text-sm">nginx-proxy</h3>
+                            <p class="text-xs text-slate-500 mt-1">Reverse Proxy</p>
+                        </div>
+                        <span class="status-badge status-running">● Running</span>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Port</span>
+                            <span class="text-slate-200">80, 443</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Uptime</span>
+                            <span class="text-slate-200">15d</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">CPU / RAM</span>
+                            <span class="text-slate-200">0.2% / 12.4M</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-sm btn-secondary flex-1">Logs</button>
+                        <button class="btn-sm btn-secondary">⋯</button>
+                    </div>
+                </div>
+
+                <!-- Service Tile 2 -->
+                <div class="card-base p-5 rounded-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="font-semibold text-sm">postgres-db</h3>
+                            <p class="text-xs text-slate-500 mt-1">Database</p>
+                        </div>
+                        <span class="status-badge status-running">● Running</span>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Port</span>
+                            <span class="text-slate-200">5432</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Uptime</span>
+                            <span class="text-slate-200">8d</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">CPU / RAM</span>
+                            <span class="text-slate-200">1.5% / 256.8M</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-sm btn-secondary flex-1">Logs</button>
+                        <button class="btn-sm btn-secondary">⋯</button>
+                    </div>
+                </div>
+
+                <!-- Service Tile 3 -->
+                <div class="card-base p-5 rounded-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="font-semibold text-sm">redis-cache</h3>
+                            <p class="text-xs text-slate-500 mt-1">Cache</p>
+                        </div>
+                        <span class="status-badge status-down">● Down</span>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Port</span>
+                            <span class="text-slate-200">6379</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Status</span>
+                            <span class="text-red-400">Down 5h</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Action</span>
+                            <span class="text-amber-400">Manual</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-sm" style="background: rgba(34, 197, 94, 0.2); color: #86efac; flex: 1;">Restart</button>
+                        <button class="btn-sm btn-secondary">⋯</button>
+                    </div>
+                </div>
+
+                <!-- Service Tile 4 -->
+                <div class="card-base p-5 rounded-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="font-semibold text-sm">api-server</h3>
+                            <p class="text-xs text-slate-500 mt-1">Node.js API</p>
+                        </div>
+                        <span class="status-badge status-running">● Running</span>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Port</span>
+                            <span class="text-slate-200">3000</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Uptime</span>
+                            <span class="text-slate-200">2d</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">CPU / RAM</span>
+                            <span class="text-slate-200">0.8% / 124M</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-sm btn-secondary flex-1">Logs</button>
+                        <button class="btn-sm btn-secondary">⋯</button>
+                    </div>
+                </div>
+
+                <!-- Service Tile 5 -->
+                <div class="card-base p-5 rounded-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="font-semibold text-sm">grafana</h3>
+                            <p class="text-xs text-slate-500 mt-1">Dashboards</p>
+                        </div>
+                        <span class="status-badge status-running">● Running</span>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Port</span>
+                            <span class="text-slate-200">3001</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Uptime</span>
+                            <span class="text-slate-200">3d</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">CPU / RAM</span>
+                            <span class="text-slate-200">0.4% / 89.2M</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-sm btn-secondary flex-1">Logs</button>
+                        <button class="btn-sm btn-secondary">⋯</button>
+                    </div>
+                </div>
+
+                <!-- Service Tile 6 -->
+                <div class="card-base p-5 rounded-lg">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="font-semibold text-sm">traefik</h3>
+                            <p class="text-xs text-slate-500 mt-1">Load Balancer</p>
+                        </div>
+                        <span class="status-badge status-running">● Running</span>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Port</span>
+                            <span class="text-slate-200">80, 443</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Uptime</span>
+                            <span class="text-slate-200">20d</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">CPU / RAM</span>
+                            <span class="text-slate-200">0.3% / 45.8M</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-sm btn-secondary flex-1">Logs</button>
+                        <button class="btn-sm btn-secondary">⋯</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-12 pt-6 border-t border-slate-700 text-center text-xs text-slate-500">
+            <p>Atlas Dashboard • Auto-discovers services • Drag-to-customize</p>
+        </div>
+    </div>
+</body>
+</html>
+    <div class="max-w-7xl mx-auto">
+        <!-- Header with Grid Controls -->
+        <div class="mb-8 flex justify-between items-start">
+            <div>
+                <h1 class="text-4xl font-bold mb-2">🏠 Atlas Homeserver</h1>
+                <p class="text-slate-400">Auto-discovering services • Drag-to-customize • Real-time integrations</p>
+            </div>
+            <div class="space-y-2 text-right">
+                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">✏️ Edit</button>
+                <button class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm ml-2">⚙️ Settings</button>
+            </div>
+        </div>
+
+        <!-- Search/Quick Actions -->
+        <div class="mb-8">
+            <input type="text" placeholder="🔍 Search services, containers, bookmarks..." 
+                class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+        </div>
+
+        <!-- Quick Access Section -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold mb-4 text-slate-300">⭐ Favorites (Drag to reorder)</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div class="bg-gradient-to-br from-purple-600 to-purple-700 p-6 rounded-lg text-center hover:shadow-lg transition cursor-move">
+                    <div class="text-4xl mb-2">🔴</div>
+                    <p class="font-semibold text-sm">Sonarr</p>
+                    <p class="text-xs text-slate-300 mt-1">5 Shows</p>
+                </div>
+                <div class="bg-gradient-to-br from-yellow-600 to-yellow-700 p-6 rounded-lg text-center hover:shadow-lg transition cursor-move">
+                    <div class="text-4xl mb-2">🎬</div>
+                    <p class="font-semibold text-sm">Radarr</p>
+                    <p class="text-xs text-slate-300 mt-1">124 Movies</p>
+                </div>
+                <div class="bg-gradient-to-br from-pink-600 to-pink-700 p-6 rounded-lg text-center hover:shadow-lg transition cursor-move">
+                    <div class="text-4xl mb-2">📺</div>
+                    <p class="font-semibold text-sm">Plex</p>
+                    <p class="text-xs text-slate-300 mt-1">2.3 TB</p>
+                </div>
+                <div class="bg-gradient-to-br from-blue-600 to-blue-700 p-6 rounded-lg text-center hover:shadow-lg transition cursor-move">
+                    <div class="text-4xl mb-2">🔍</div>
+                    <p class="font-semibold text-sm">Prowlarr</p>
+                    <p class="text-xs text-slate-300 mt-1">28 Indexers</p>
+                </div>
+                <div class="bg-gradient-to-br from-green-600 to-green-700 p-6 rounded-lg text-center hover:shadow-lg transition cursor-move">
+                    <div class="text-4xl mb-2">📥</div>
+                    <p class="font-semibold text-sm">SABnzbd</p>
+                    <p class="text-xs text-slate-300 mt-1">3.2 GB/s</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Docker Containers Section -->
+        <div class="mb-12">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-blue-400">🐳 Services (Auto-Discovered: 28)</h2>
+                <button class="text-xs bg-slate-700 px-3 py-1 rounded">+ Add Manual</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Container 1 - Service Tile with Integration -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg border border-slate-700 hover:border-blue-500 transition cursor-move group">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="text-3xl mb-2">🌐</div>
+                            <h3 class="text-lg font-semibold">nginx-proxy</h3>
+                            <p class="text-xs text-slate-400">Reverse Proxy • Running</p>
+                        </div>
+                        <span class="bg-green-500 text-white px-2 py-1 rounded text-xs group-hover:bg-green-600">80/443</span>
+                    </div>
+                    <div class="space-y-2 text-sm text-slate-400">
+                        <p><strong>Status:</strong> ✅ Healthy</p>
+                        <p><strong>Uptime:</strong> 15 days</p>
+                        <p><strong>CPU/RAM:</strong> 0.2% / 12.4 MB</p>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-700 flex gap-2">
+                        <button class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded">Logs</button>
+                        <button class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded">Config</button>
+                    </div>
+                </div>
+
+                <!-- Container 2 -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg border border-slate-700 hover:border-purple-500 transition cursor-move group">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="text-3xl mb-2">🗄️</div>
+                            <h3 class="text-lg font-semibold">postgres-db</h3>
+                            <p class="text-xs text-slate-400">Database • Running</p>
+                        </div>
+                        <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">5432</span>
+                    </div>
+                    <div class="space-y-2 text-sm text-slate-400">
+                        <p><strong>Status:</strong> ✅ Connected</p>
+                        <p><strong>Uptime:</strong> 8 days</p>
+                        <p><strong>CPU/RAM:</strong> 1.5% / 256.8 MB</p>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-700">
+                        <p class="text-xs">📊 Queries/sec: 1,234</p>
+                    </div>
+                </div>
+
+                <!-- Container 3 -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg border border-slate-700 hover:border-red-500 transition cursor-move group">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="text-3xl mb-2">⚡</div>
+                            <h3 class="text-lg font-semibold">redis-cache</h3>
+                            <p class="text-xs text-slate-400">Cache • Stopped</p>
+                        </div>
+                        <span class="bg-red-500 text-white px-2 py-1 rounded text-xs">Down</span>
+                    </div>
+                    <div class="space-y-2 text-sm text-slate-400">
+                        <p><strong>Status:</strong> ⚠️ Offline</p>
+                        <p><strong>Down for:</strong> 5 hours</p>
+                        <p><strong>Last healthy:</strong> 5 hours ago</p>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-700 flex gap-2">
+                        <button class="text-xs bg-green-600 hover:bg-green-700 px-2 py-1 rounded">Restart</button>
+                        <button class="text-xs bg-slate-700 px-2 py-1 rounded">Logs</button>
+                    </div>
+                </div>
+
+                <!-- Container 4 -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg border border-slate-700 hover:border-green-500 transition cursor-move group">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="text-3xl mb-2">🚀</div>
+                            <h3 class="text-lg font-semibold">api-server</h3>
+                            <p class="text-xs text-slate-400">Node.js • Running</p>
+                        </div>
+                        <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">3000</span>
+                    </div>
+                    <div class="space-y-2 text-sm text-slate-400">
+                        <p><strong>Status:</strong> ✅ Healthy</p>
+                        <p><strong>Uptime:</strong> 2 days</p>
+                        <p><strong>CPU/RAM:</strong> 0.8% / 124.3 MB</p>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-700">
+                        <p class="text-xs">📡 Requests/min: 5,432</p>
+                    </div>
+                </div>
+
+                <!-- Container 5 -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg border border-slate-700 hover:border-yellow-500 transition cursor-move group">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="text-3xl mb-2">📊</div>
+                            <h3 class="text-lg font-semibold">grafana</h3>
+                            <p class="text-xs text-slate-400">Dashboards • Running</p>
+                        </div>
+                        <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">3001</span>
+                    </div>
+                    <div class="space-y-2 text-sm text-slate-400">
+                        <p><strong>Status:</strong> ✅ Online</p>
+                        <p><strong>Uptime:</strong> 3 days</p>
+                        <p><strong>CPU/RAM:</strong> 0.4% / 89.2 MB</p>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-700">
+                        <p class="text-xs">📈 12 Dashboards active</p>
+                    </div>
+                </div>
+
+                <!-- Container 6 -->
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg border border-slate-700 hover:border-indigo-500 transition cursor-move group">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <div class="text-3xl mb-2">🔀</div>
+                            <h3 class="text-lg font-semibold">traefik</h3>
+                            <p class="text-xs text-slate-400">Load Balancer • Running</p>
+                        </div>
+                        <span class="bg-green-500 text-white px-2 py-1 rounded text-xs">80/443</span>
+                    </div>
+                    <div class="space-y-2 text-sm text-slate-400">
+                        <p><strong>Status:</strong> ✅ Routing</p>
+                        <p><strong>Uptime:</strong> 20 days</p>
+                        <p><strong>CPU/RAM:</strong> 0.3% / 45.8 MB</p>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-700">
+                        <p class="text-xs">🛣️ 14 Routes active</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UniFi Devices Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4 text-purple-400">📡 UniFi Network Devices</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Device 1 -->
+                <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                    <h3 class="text-lg font-semibold mb-4">MacBook Pro (mblanke)</h3>
+                    <div class="space-y-3 text-sm text-slate-400">
+                        <div class="flex justify-between">
+                            <span>IP Address:</span>
+                            <span class="text-slate-100">192.168.1.25</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Signal Strength:</span>
+                            <span class="text-green-400">-42 dBm (Excellent)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Connection:</span>
+                            <span class="text-slate-100">5GHz (802.11ax)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Last Seen:</span>
+                            <span class="text-slate-100">2 minutes ago</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device 2 -->
+                <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                    <h3 class="text-lg font-semibold mb-4">iPhone 14</h3>
+                    <div class="space-y-3 text-sm text-slate-400">
+                        <div class="flex justify-between">
+                            <span>IP Address:</span>
+                            <span class="text-slate-100">192.168.1.34</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Signal Strength:</span>
+                            <span class="text-yellow-400">-65 dBm (Good)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Connection:</span>
+                            <span class="text-slate-100">5GHz (802.11ax)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Last Seen:</span>
+                            <span class="text-slate-100">1 minute ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Synology NAS Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4 text-yellow-400">💾 Synology NAS Storage</h2>
+            <div class="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                <div class="space-y-6">
+                    <!-- Volume 1 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-semibold">Volume 1</h3>
+                            <span class="text-sm text-slate-400">78% Used</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+                            <div class="h-full bg-yellow-500 rounded-full" style="width: 78%"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-xs text-slate-400">
+                            <span>7.8 TB used</span>
+                            <span>2.2 TB free</span>
+                        </div>
+                    </div>
+
+                    <!-- Volume 2 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-semibold">Volume 2</h3>
+                            <span class="text-sm text-slate-400">45% Used</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+                            <div class="h-full bg-green-500 rounded-full" style="width: 45%"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-xs text-slate-400">
+                            <span>4.5 TB used</span>
+                            <span>5.5 TB free</span>
+                        </div>
+                    </div>
+
+                    <!-- Volume 3 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-semibold">Backup Drive</h3>
+                            <span class="text-sm text-slate-400">92% Used</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+                            <div class="h-full bg-red-500 rounded-full" style="width: 92%"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-xs text-slate-400">
+                            <span>9.2 TB used</span>
+                            <span>0.8 TB free</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grafana Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4 text-red-400">📈 Grafana Dashboards</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-800 p-6 rounded-lg border border-slate-700 aspect-video flex items-center justify-center">
+                    <div class="text-center">
+                        <p class="text-slate-400 mb-2">System Metrics Dashboard</p>
+                        <div class="inline-block bg-slate-700 px-4 py-2 rounded text-sm">📊 View in Grafana</div>
+                    </div>
+                </div>
+                <div class="bg-slate-800 p-6 rounded-lg border border-slate-700 aspect-video flex items-center justify-center">
+                    <div class="text-center">
+                        <p class="text-slate-400 mb-2">Network Performance</p>
+                        <div class="inline-block bg-slate-700 px-4 py-2 rounded text-sm">📊 View in Grafana</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-slate-500 text-sm mt-12 space-y-4">
+            <p class="text-lg font-semibold">🏠 Atlas Homeserver Dashboard</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto text-xs">
+                <div class="bg-slate-800 p-3 rounded">
+                    <p class="font-bold text-green-400">28</p>
+                    <p class="text-slate-400">Services</p>
+                </div>
+                <div class="bg-slate-800 p-3 rounded">
+                    <p class="font-bold text-green-400">27</p>
+                    <p class="text-slate-400">Running</p>
+                </div>
+                <div class="bg-slate-800 p-3 rounded">
+                    <p class="font-bold text-orange-400">1</p>
+                    <p class="text-slate-400">Stopped</p>
+                </div>
+                <div class="bg-slate-800 p-3 rounded">
+                    <p class="font-bold text-blue-400">19.4 GB</p>
+                    <p class="text-slate-400">RAM Used</p>
+                </div>
+            </div>
+            <p class="text-xs text-slate-600 mt-4">Like Homarr • Auto-discovers Docker • Drag-to-customize • Real-time stats</p>
+        </div>
+    </div>
+</body>
+</html>

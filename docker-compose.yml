@@ -1,0 +1,37 @@
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dashboard
+    user: root
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - UNIFI_HOST=${UNIFI_HOST}
+      - UNIFI_PORT=${UNIFI_PORT}
+      - UNIFI_USERNAME=${UNIFI_USERNAME}
+      - UNIFI_PASSWORD=${UNIFI_PASSWORD}
+      - SYNOLOGY_HOST=${SYNOLOGY_HOST}
+      - SYNOLOGY_PORT=${SYNOLOGY_PORT}
+      - SYNOLOGY_USERNAME=${SYNOLOGY_USERNAME}
+      - SYNOLOGY_PASSWORD=${SYNOLOGY_PASSWORD}
+      - NEXT_PUBLIC_GRAFANA_HOST=${NEXT_PUBLIC_GRAFANA_HOST}
+      - GRAFANA_API_KEY=${GRAFANA_API_KEY}
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+    networks:
+      - traefik
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dash.rule=Host(`dashboard.guapo613.beer`)"
+      - "traefik.http.routers.dash.entrypoints=web,websecure"
+      - "traefik.http.routers.dash.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dash.loadbalancer.server.port=3000"
+
+networks:
+  traefik:
+    external: true

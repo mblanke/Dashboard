@@ -1,0 +1,84 @@
+name: Deploy to Atlas Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Deploy to Atlas Server
+        env:
+          ATLAS_HOST: ${{ secrets.ATLAS_HOST }}
+          ATLAS_USER: ${{ secrets.ATLAS_USER }}
+          ATLAS_SSH_KEY: ${{ secrets.ATLAS_SSH_KEY }}
+        run: |
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "$ATLAS_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $ATLAS_HOST >> ~/.ssh/known_hosts
+          
+          # Deploy
+          ssh $ATLAS_USER@$ATLAS_HOST << 'EOF'
+            set -e
+            
+            echo "📦 Starting deployment..."
+            
+            # Navigate to deploy directory
+            mkdir -p /opt/dashboard
+            cd /opt/dashboard
+            
+            # Clone or update repo
+            if [ -d .git ]; then
+              echo "🔄 Updating repository..."
+              git pull origin main
+            else
+              echo "🔄 Cloning repository..."
+              git clone https://github.com/mblanke/Dashboard.git .
+            fi
+            
+            # Check .env.local exists
+            if [ ! -f .env.local ]; then
+              echo "❌ .env.local not found. Please create it on the server."
+              exit 1
+            fi
+            
+            # Build and deploy
+            echo "🔨 Building Docker image..."
+            docker-compose build --no-cache
+            
+            echo "🚀 Deploying container..."
+            docker-compose up -d
+            
+            # Wait and verify
+            sleep 5
+            
+            if docker-compose ps | grep -q "Up"; then
+              echo "✅ Deployment successful!"
+              docker-compose logs --tail=20 dashboard
+            else
+              echo "❌ Deployment failed"
+              docker-compose logs dashboard
+              exit 1
+            fi
+          EOF
+      
+      - name: Notify deployment status
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const status = '${{ job.status }}';
+            const message = status === 'success' 
+              ? '✅ Dashboard deployed successfully to Atlas server (100.104.196.38:3001)'
+              : '❌ Dashboard deployment failed. Check logs for details.';
+            
+            core.notice(message);
