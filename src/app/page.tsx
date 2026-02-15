@@ -9,6 +9,7 @@ import NetworkWidget from "@/components/NetworkWidget";
 import SynologyWidget from "@/components/SynologyWidget";
 import ServerStatsWidget from "@/components/ServerStatsWidget";
 import GPUStatsWidget from "@/components/GPUStatsWidget";
+import RAGWidget from "@/components/RAGWidget";
 import { Container } from "@/types";
 
 export default function Home() {
@@ -145,11 +146,7 @@ export default function Home() {
             dashboardUid="docker-containers"
             panelId={8}
           />
-          <div className="grid grid-cols-3 gap-2">
-            <GrafanaWidget title="Files Processed" dashboardUid="rag-pipeline" panelId={1} height={120} />
-            <GrafanaWidget title="Failed Files" dashboardUid="rag-pipeline" panelId={2} height={120} />
-            <GrafanaWidget title="Total Chunks" dashboardUid="rag-pipeline" panelId={3} height={120} />
-          </div>
+          <RAGWidget />
 
         </div>
 
