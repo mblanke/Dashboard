@@ -204,6 +204,25 @@ export default function Home() {
           />
         </div>
 
+        {/* GB10 Fabric Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <GrafanaWidget
+            title="GPU Utilization - GB10-A"
+            dashboardUid="56d02d73-c5f5-4869-83fe-113483dc0e67"
+            panelId={11}
+          />
+          <GrafanaWidget
+            title="GPU Utilization - GB10-B"
+            dashboardUid="56d02d73-c5f5-4869-83fe-113483dc0e67"
+            panelId={12}
+          />
+          <GrafanaWidget
+            title="Network Throughput"
+            dashboardUid="56d02d73-c5f5-4869-83fe-113483dc0e67"
+            panelId={17}
+          />
+        </div>
+
 
         {/* Semantic Search */}
         <div className="mb-8">
