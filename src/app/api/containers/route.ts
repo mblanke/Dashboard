@@ -1,63 +1,122 @@
 import { NextResponse } from "next/server";
-import Docker from "dockerode";
+import axios from "axios";
+import http from "http";
 
-const docker = new Docker({ socketPath: "/var/run/docker.sock" });
+// Support both Unix socket and TCP
+const DOCKER_SOCKET = process.env.DOCKER_SOCKET || "/var/run/docker.sock";
+const DOCKER_HOST = process.env.DOCKER_HOST;
+
+function getAxiosConfig(path: string, params?: Record<string, any>) {
+  if (DOCKER_HOST) {
+    // TCP mode: DOCKER_HOST is set (e.g., http://localhost:2375)
+    return { url: `${DOCKER_HOST}${path}`, params };
+  }
+  // Unix socket mode (default)
+  return {
+    url: `http://localhost${path}`,
+    params,
+    socketPath: DOCKER_SOCKET,
+    httpAgent: new http.Agent({ socketPath: DOCKER_SOCKET } as any),
+  };
+}
 
 export async function GET() {
   try {
-    const containers = await docker.listContainers({ all: true });
+    const config = getAxiosConfig("/containers/json", { all: true });
+    const response = await axios.get(config.url, {
+      params: config.params,
+      socketPath: (config as any).socketPath,
+      httpAgent: (config as any).httpAgent,
+    });
 
-    const enriched = await Promise.all(
-      containers.map(async (c: any) => {
-        let statsText = "";
-        let cpu = "0%";
-        let memory = "0 MB";
+    // Enhanced container data with stats
+    const containers = await Promise.all(
+      response.data.map(async (container: any) => {
+        let stats = { cpu: "0%", memory: "0 MB" };
 
-        if (c.State === "running") {
+        if (container.State === "running") {
           try {
-            const container = docker.getContainer(c.Id);
-            const stats = await container.stats({ stream: false });
+            const statsConfig = getAxiosConfig(
+              `/containers/${container.Id}/stats`,
+              { stream: false }
+            );
+            const statsResponse = await axios.get(statsConfig.url, {
+              params: statsConfig.params,
+              socketPath: (statsConfig as any).socketPath,
+              httpAgent: (statsConfig as any).httpAgent,
+            });
+            const data = statsResponse.data;
 
             const cpuDelta =
-              stats.cpu_stats?.cpu_usage?.total_usage -
-              (stats.precpu_stats?.cpu_usage?.total_usage || 0);
+              data.cpu_stats.cpu_usage.total_usage -
+              (data.precpu_stats?.cpu_usage?.total_usage || 0);
             const systemDelta =
-              stats.cpu_stats?.system_cpu_usage -
-              (stats.precpu_stats?.system_cpu_usage || 0);
-            const online = stats.cpu_stats?.online_cpus || 1;
-            const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * 100 * online : 0;
+              data.cpu_stats.system_cpu_usage -
+              (data.precpu_stats?.system_cpu_usage || 0);
+            const cpuPercent =
+              systemDelta > 0
+                ? (cpuDelta / systemDelta) *
+                  100 *
+                  (data.cpu_stats.online_cpus || 1)
+                : 0;
 
-            const memUsage = stats.memory_stats?.usage || 0;
-            const memLimit = stats.memory_stats?.limit || 0;
-            const memMB = (memUsage / 1024 / 1024).toFixed(1);
-            const memLimitMB = (memLimit / 1024 / 1024).toFixed(0);
+            const memoryUsage = data.memory_stats?.usage || 0;
+            const memoryLimit = data.memory_stats?.limit || 0;
+            const memoryMB = (memoryUsage / 1024 / 1024).toFixed(1);
+            const memoryLimitMB = (memoryLimit / 1024 / 1024).toFixed(0);
 
-            cpu = `${cpuPercent.toFixed(1)}%`;
-            memory = `${memMB} MB / ${memLimitMB} MB`;
-            statsText = `${cpu}, ${memory}`;
+            stats = {
+              cpu: cpuPercent.toFixed(1) + "%",
+              memory: `${memoryMB} MB / ${memoryLimitMB} MB`,
+            };
           } catch (err) {
-            statsText = "n/a";
+            console.warn(
+              `Failed to fetch stats for ${container.Names[0]}:`,
+              err instanceof Error ? err.message : err
+            );
           }
         }
 
         return {
-          id: c.Id.slice(0, 12),
-          name: c.Names?.[0]?.replace(/^\//, "") || "unknown",
-          image: c.Image,
-          state: c.State,
-          status: c.Status,
-          ports: c.Ports || [],
-          labels: c.Labels || {},
-          cpu,
-          memory,
-          stats: statsText,
+          id: container.Id.slice(0, 12),
+          name: container.Names[0]?.replace(/^\//, "") || "unknown",
+          image: container.Image,
+          imageId: container.ImageID,
+          status: container.Status,
+          state: container.State,
+          created: container.Created,
+          ports: (container.Ports || []).map((port: any) => {
+            if (port.PublicPort) {
+              return `${port.PublicPort}:${port.PrivatePort}/${port.Type}`;
+            }
+            return `${port.PrivatePort}/${port.Type}`;
+          }),
+          labels: container.Labels || {},
+          mounts: (container.Mounts || []).map((mount: any) => ({
+            source: mount.Source,
+            destination: mount.Destination,
+            mode: mount.Mode,
+          })),
+          stats,
         };
       })
     );
 
-    return NextResponse.json(enriched);
+    return NextResponse.json({
+      total: containers.length,
+      running: containers.filter((c) => c.state === "running").length,
+      containers: containers.sort((a: any, b: any) =>
+        a.name.localeCompare(b.name)
+      ),
+    });
   } catch (error) {
-    console.error("Containers API error:", error);
-    return NextResponse.json({ error: "Failed to fetch containers" }, { status: 500 });
+    console.error("Docker API error:", error instanceof Error ? error.message : error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to fetch containers";
+
+    return NextResponse.json(
+      { error: errorMessage, total: 0, running: 0, containers: [] },
+      { status: 500 }
+    );
   }
 }

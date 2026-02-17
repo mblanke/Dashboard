@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Server, Activity } from "lucide-react";
+import { Search, Server, Activity } from "lucide-react";
 import ContainerGroup from "@/components/ContainerGroup";
 import SearchBar from "@/components/SearchBar";
 import GrafanaWidget from "@/components/GrafanaWidget";
-import NetworkWidget from "@/components/NetworkWidget";
+import UnifiWidget from "@/components/UnifiWidget";
 import SynologyWidget from "@/components/SynologyWidget";
-import ServerStatsWidget from "@/components/ServerStatsWidget";
-import GPUStatsWidget from "@/components/GPUStatsWidget";
-import RAGWidget from "@/components/RAGWidget";
+import SemanticSearch from "@/components/SemanticSearch";
 import { Container } from "@/types";
 
 export default function Home() {
@@ -19,7 +17,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchContainers();
-    const interval = setInterval(fetchContainers, 10000);
+    const interval = setInterval(fetchContainers, 10000); // Refresh every 10s
     return () => clearInterval(interval);
   }, []);
 
@@ -27,10 +25,19 @@ export default function Home() {
     try {
       const response = await fetch("/api/containers");
       const data = await response.json();
-      setContainers(data);
+      // Defensive: ensure we always set an array
+      if (data && Array.isArray(data.containers)) {
+        setContainers(data.containers);
+      } else if (Array.isArray(data)) {
+        setContainers(data);
+      } else {
+        console.warn("Unexpected container API response:", data);
+        setContainers([]);
+      }
       setLoading(false);
     } catch (error) {
       console.error("Failed to fetch containers:", error);
+      setContainers([]);
       setLoading(false);
     }
   };
@@ -39,46 +46,86 @@ export default function Home() {
     return {
       media: containers.filter((c) =>
         [
-          "sonarr", "radarr", "lidarr", "whisparr", "prowlarr", "bazarr",
-          "tautulli", "overseerr", "ombi", "jellyfin", "plex", "audiobookshelf",
+          "sonarr",
+          "radarr",
+          "lidarr",
+          "whisparr",
+          "prowlarr",
+          "bazarr",
+          "tautulli",
+          "overseerr",
+          "ombi",
+          "jellyfin",
+          "plex",
+          "audiobookshelf",
           "lazylibrarian",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       download: containers.filter((c) =>
         [
-          "qbittorrent", "transmission", "sabnzbd", "nzbget", "deluge",
-          "gluetun", "flaresolverr",
+          "qbittorrent",
+          "transmission",
+          "sabnzbd",
+          "nzbget",
+          "deluge",
+          "gluetun",
+          "flaresolverr",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       infrastructure: containers.filter((c) =>
         [
-          "traefik", "portainer", "heimdall", "homepage", "nginx", "caddy",
-          "pihole", "adguard", "unbound", "mosquitto",
+          "traefik",
+          "portainer",
+          "heimdall",
+          "homepage",
+          "nginx",
+          "caddy",
+          "pihole",
+          "adguard",
+          "unbound",
+          "mosquitto",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       monitoring: containers.filter((c) =>
         [
-          "grafana", "prometheus", "cadvisor", "node-exporter", "dozzle",
-          "uptime-kuma", "beszel", "dockmon", "docker-stats-exporter", "diun",
+          "grafana",
+          "prometheus",
+          "cadvisor",
+          "node-exporter",
+          "dozzle",
+          "uptime-kuma",
+          "beszel",
+          "dockmon",
+          "docker-stats-exporter",
+          "diun",
           "container-census",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       automation: containers.filter((c) =>
         [
-          "homeassistant", "home-assistant", "n8n", "nodered", "node-red",
+          "homeassistant",
+          "home-assistant",
+          "n8n",
+          "nodered",
+          "node-red",
           "duplicati",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       productivity: containers.filter((c) =>
         [
-          "nextcloud", "openproject", "gitea", "gitlab", "code-server", "vscode",
+          "nextcloud",
+          "openproject",
+          "gitea",
+          "gitlab",
+          "code-server",
+          "vscode",
         ].some((app) => c.name.toLowerCase().includes(app))
       ),
       media_processing: containers.filter((c) =>
         ["tdarr"].some((app) => c.name.toLowerCase().includes(app))
       ),
       ai: containers.filter((c) =>
-        ["openwebui", "open-webui", "ollama", "stable-diffusion", "mcp", "rag", "litellm", "llm-router", "qdrant", "chromadb"].some(
+        ["openwebui", "open-webui", "ollama", "stable-diffusion", "mcp"].some(
           (app) => c.name.toLowerCase().includes(app)
         )
       ),
@@ -105,6 +152,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      {/* Header */}
       <header className="border-b border-gray-700 bg-gray-900/50 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -126,65 +174,117 @@ export default function Home() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Server & GPU Stats */}
-        <div className="space-y-6 mb-8">
-          <ServerStatsWidget />
-          <GPUStatsWidget />
-        </div>
-
-        {/* Network, NAS & Server Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <NetworkWidget />
+        {/* Widgets Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <UnifiWidget />
           <SynologyWidget />
-
+          <GrafanaWidget
+            title="Server Stats"
+            dashboardId="server-overview"
+            panelId={1}
+          />
         </div>
 
         {/* Grafana Dashboards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <GrafanaWidget
-            title="Docker Containers"
-            dashboardUid="docker-containers"
-            panelId={8}
+            title="Docker Stats"
+            dashboardId="docker-monitoring"
+            panelId={2}
           />
-          <RAGWidget />
-
+          <GrafanaWidget
+            title="LLM Metrics"
+            dashboardId="llm-monitoring"
+            panelId={3}
+          />
+          <GrafanaWidget
+            title="System Load"
+            dashboardId="system-metrics"
+            panelId={4}
+          />
         </div>
 
+
+        {/* Semantic Search */}
+        <div className="mb-8">
+          <SemanticSearch />
+        </div>
+        {/* Container Groups */}
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
         ) : (
           <div className="space-y-6">
-            {grouped.ai.length > 0 && (
-              <ContainerGroup title="AI Services" containers={grouped.ai} icon="🤖" />
-            )}
             {grouped.media.length > 0 && (
-              <ContainerGroup title="Media Management" containers={grouped.media} icon="📺" />
+              <ContainerGroup
+                title="Media Management"
+                containers={grouped.media}
+                icon="📺"
+              />
             )}
             {grouped.download.length > 0 && (
-              <ContainerGroup title="Download Clients" containers={grouped.download} icon="⬇️" />
+              <ContainerGroup
+                title="Download Clients"
+                containers={grouped.download}
+                icon="⬇️"
+              />
+            )}
+            {grouped.ai.length > 0 && (
+              <ContainerGroup
+                title="AI Services"
+                containers={grouped.ai}
+                icon="🤖"
+              />
             )}
             {grouped.photos.length > 0 && (
-              <ContainerGroup title="Photo Management" containers={grouped.photos} icon="📷" />
+              <ContainerGroup
+                title="Photo Management"
+                containers={grouped.photos}
+                icon="📷"
+              />
             )}
             {grouped.media_processing.length > 0 && (
-              <ContainerGroup title="Media Processing" containers={grouped.media_processing} icon="🎬" />
+              <ContainerGroup
+                title="Media Processing"
+                containers={grouped.media_processing}
+                icon="🎬"
+              />
             )}
             {grouped.automation.length > 0 && (
-              <ContainerGroup title="Automation" containers={grouped.automation} icon="⚡" />
+              <ContainerGroup
+                title="Automation"
+                containers={grouped.automation}
+                icon="⚡"
+              />
             )}
             {grouped.productivity.length > 0 && (
-              <ContainerGroup title="Productivity" containers={grouped.productivity} icon="💼" />
+              <ContainerGroup
+                title="Productivity"
+                containers={grouped.productivity}
+                icon="💼"
+              />
             )}
             {grouped.infrastructure.length > 0 && (
-              <ContainerGroup title="Infrastructure" containers={grouped.infrastructure} icon="🔧" />
+              <ContainerGroup
+                title="Infrastructure"
+                containers={grouped.infrastructure}
+                icon="🔧"
+              />
             )}
             {grouped.monitoring.length > 0 && (
-              <ContainerGroup title="Monitoring" containers={grouped.monitoring} icon="📊" />
+              <ContainerGroup
+                title="Monitoring"
+                containers={grouped.monitoring}
+                icon="📊"
+              />
             )}
             {grouped.databases.length > 0 && (
-              <ContainerGroup title="Databases" containers={grouped.databases} icon="🗄️" />
+              <ContainerGroup
+                title="Databases"
+                containers={grouped.databases}
+                icon="🗄️"
+              />
             )}
           </div>
         )}
