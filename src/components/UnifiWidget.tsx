@@ -19,7 +19,9 @@ export default function UnifiWidget() {
       const response = await fetch("/api/unifi");
       if (response.ok) {
         const data = await response.json();
-        setDevices(data);
+        // API returns { devices, health, totalClients } — extract the array
+        const devArr = Array.isArray(data) ? data : Array.isArray(data?.devices) ? data.devices : [];
+        setDevices(devArr);
         setError(false);
       } else {
         setError(true);
