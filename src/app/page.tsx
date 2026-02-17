@@ -180,7 +180,7 @@ export default function Home() {
           <SynologyWidget />
           <GrafanaWidget
             title="Server Stats"
-            dashboardId="server-overview"
+            dashboardUid="server-overview"
             panelId={1}
           />
         </div>
@@ -189,17 +189,17 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <GrafanaWidget
             title="Docker Stats"
-            dashboardId="docker-monitoring"
+            dashboardUid="docker-monitoring"
             panelId={2}
           />
           <GrafanaWidget
             title="LLM Metrics"
-            dashboardId="llm-monitoring"
+            dashboardUid="llm-monitoring"
             panelId={3}
           />
           <GrafanaWidget
             title="System Load"
-            dashboardId="system-metrics"
+            dashboardUid="system-metrics"
             panelId={4}
           />
         </div>
