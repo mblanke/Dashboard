@@ -179,8 +179,8 @@ export default function Home() {
           <UnifiWidget />
           <SynologyWidget />
           <GrafanaWidget
-            title="Server Stats"
-            dashboardUid="server-overview"
+            title="Docker Containers"
+            dashboardUid="docker-containers"
             panelId={1}
           />
         </div>
@@ -188,19 +188,19 @@ export default function Home() {
         {/* Grafana Dashboards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <GrafanaWidget
-            title="Docker Stats"
-            dashboardUid="docker-monitoring"
-            panelId={2}
+            title="Container CPU"
+            dashboardUid="docker-containers"
+            panelId={10}
           />
           <GrafanaWidget
-            title="LLM Metrics"
-            dashboardUid="llm-monitoring"
-            panelId={3}
+            title="RAG Pipeline"
+            dashboardUid="rag-pipeline"
+            panelId={8}
           />
           <GrafanaWidget
-            title="System Load"
-            dashboardUid="system-metrics"
-            panelId={4}
+            title="RAG Eval"
+            dashboardUid="atlas-rag-eval"
+            panelId={7}
           />
         </div>
 
