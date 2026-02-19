@@ -232,20 +232,20 @@ export default function SemanticSearch() {
   const [agentResult, setAgentResult] = useState<AgentResponse | null>(null);
 
   // fetch tags on mount
-  useEffect(() => {
-    ragFetch({ action: "tags" })
-      .then((data) => {
-        const tags: string[] = Array.isArray(data)
-          ? data
-          : Array.isArray(data.tags)
-          ? data.tags
-          : [];
-        setAvailableTags(tags);
-      })
-      .catch(() => {
-        /* silently ignore – tags are optional */
-      });
-  }, []);
+//   useEffect(() => {
+//     ragFetch({ action: "tags" })
+//       .then((data) => {
+//         const tags: string[] = Array.isArray(data)
+//           ? data
+//           : Array.isArray(data.tags)
+//           ? data.tags
+//           : [];
+//         setAvailableTags(tags);
+//       })
+//       .catch(() => {
+//         /* silently ignore – tags are optional */
+//       });
+//   }, []);
 
   const toggleTag = useCallback((tag: string) => {
     setSelectedTags((prev) =>
